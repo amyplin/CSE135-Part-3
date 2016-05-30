@@ -13,7 +13,7 @@
 	Connection conn = null;
 	try {
     Class.forName("org.postgresql.Driver");
-    String url = "jdbc:postgresql://localhost:5433/CSE135";
+    String url = "jdbc:postgresql://localhost:5433/CSE135pt3";
     String admin = "postgres";
     String password = "alin";
     conn = DriverManager.getConnection(url, admin, password);
@@ -36,7 +36,8 @@
 <div class="collapse navbar-collapse">
 	<ul class="nav navbar-nav">
 		<li><a href="login.jsp">LOGIN</a></li>
-		<li><a href="signup.jsp">SIGN UP</a></li>
+		<li><a href="signup.jsp">SIGN UP
+		</a></li>
 	</ul>
 </div>
 <div>

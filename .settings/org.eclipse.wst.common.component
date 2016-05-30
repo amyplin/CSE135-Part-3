@@ -2,7 +2,7 @@
     <wb-module deploy-name="cse135-for-project2">
         <wb-resource deploy-path="/" source-path="/WebContent" tag="defaultRootSource"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
-        <property name="context-root" value="cse135-for-project2"/>
         <property name="java-output-path" value="/cse135-for-project2/build/classes"/>
+        <property name="context-root" value="cse135-for-project3"/>
     </wb-module>
 </project-modules>
