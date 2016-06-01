@@ -10,6 +10,8 @@
 	integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
 	crossorigin="anonymous">
 <title>CSE135 Project</title>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	<script type="text/javascript" src="case1_js.js"></script>
 </head>
 <%
 	Connection conn = null;
@@ -29,21 +31,46 @@ String salesCategoryMenu = "";
 	}
 	catch (Exception e) {}
 	
+	
+	
 	if ("POST".equalsIgnoreCase(request.getMethod())) {
 		String action = request.getParameter("submit");
 		if (action.equals("insert")) {
-			int queries_num = Integer.parseInt(request.getParameter("queries_num"));
-			Random rand = new Random();
-			int random_num = rand.nextInt(1) + 30;
-			if (queries_num < random_num) random_num = queries_num;
-			Statement stmt = conn.createStatement();
-			stmt.executeQuery("SELECT proc_insert_orders(" + queries_num + "," + random_num + ")");
-			out.println("<script>alert('" + queries_num + " orders are inserted!');</script>");
+	int queries_num = Integer.parseInt(request.getParameter("queries_num"));
+	Random rand = new Random();
+	int random_num = rand.nextInt(30) + 1;
+	if (queries_num < random_num) random_num = queries_num;
+	Statement stmt = conn.createStatement();
+	stmt.executeQuery("SELECT proc_insert_orders(" + queries_num + "," + random_num + ")");
+	out.println("<script>alert('" + queries_num + " orders are inserted!');</script>");
 		}
 		else if (action.equals("refresh")) {
-			//Need to implement.
+	//Need to implement.
 		}
 	}
+	
+	
+	Statement stmt10 = conn.createStatement();
+	Statement stmt11 = conn.createStatement();
+
+	PreparedStatement pstmts = conn
+			.prepareStatement("INSERT INTO productColumns (name, total) WITH productInfo(totals, product_id) "
+					+ "AS (select sum(orders.price) as totals, product_id FROM orders " + salesCategory
+					+ " group by product_id order by totals desc LIMIT 50) SELECT products.name as name, COALESCE(productInfo.totals, 0) as totals "
+					+ " FROM products LEFT OUTER JOIN productInfo "
+					+ "ON products.id = productInfo.product_id order by totals LIMIT 50");
+	pstmts.executeUpdate();
+
+	
+	PreparedStatement pst2 = conn.prepareStatement("INSERT INTO stateRows (name, total) WITH stateInfo(totals, state_id) AS (select sum(orders.price) as totals, users.state_id as state_id "
+			+ " from orders inner join users on orders.user_id = users.id " + salesCategory
+			+ " group by users.state_id order by totals desc)"
+			+ " SELECT DISTINCT LEFT(states.name,10) as state, coalesce(stateInfo.totals,0) as totals FROM states LEFT OUTER JOIN stateInfo ON states.id = "
+			+ "stateInfo.state_id order by totals");
+	pst2.executeUpdate();
+	
+	
+	
 	
 %>
 
@@ -70,10 +97,6 @@ String salesCategoryMenu = "";
 			<input class="btn btn-success" type="submit" name="submit"
 				value="refresh" />
 		</form>
-
-
-
-
 
 
 		<% 
@@ -227,10 +250,12 @@ String salesCategoryMenu = "";
 			<table class="table table-striped">
 				<th></th>
 				<%
+
+				
 					rsProducts = stmt2.executeQuery(
 							"WITH productInfo(totals, product_id) AS (select sum(orders.price) as totals, product_id "
 									+ "FROM orders " + salesCategory
-									+ " group by product_id LIMIT 50) SELECT products.name as name, COALESCE(productInfo.totals, 0) as totals, "
+									+ " group by product_id order by totals desc LIMIT 50) SELECT products.name as name, COALESCE(productInfo.totals, 0) as totals, "
 									+ "products.id FROM products LEFT OUTER JOIN productInfo "
 									+ "ON products.id = productInfo.product_id" + orderTopK + " LIMIT 50 OFFSET "
 									+ session.getAttribute("offsetProduct"));
@@ -273,17 +298,7 @@ String salesCategoryMenu = "";
 		</tr>
 		</tbody>
 		</table>
-					
-		<div class="form-group">
-			<form action="StateOrders.jsp" method="POST">
-			<% if ((Integer)session.getAttribute("offsetProduct") + 10 <= (Integer)session.getAttribute("productNum")) { %>
-				<td><input class="btn btn-primary" type="submit" name="submit"
-					value="Next 10 Products" /></td>
-				<input type="hidden" name="ProductButton" value="Products" />
-			<% } %>
-			</form>			
-		</div>
-					
+	
 					
 					
 </body>
