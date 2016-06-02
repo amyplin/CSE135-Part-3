@@ -84,22 +84,25 @@ String salesCategoryMenu = "";
 	if ("POST".equalsIgnoreCase(request.getMethod())) {
 		String action = request.getParameter("submit");
 		if (action.equals("insert")) {
-	int queries_num = Integer.parseInt(request.getParameter("queries_num"));
-	Random rand = new Random();
-	int random_num = rand.nextInt(30) + 1;
-	if (queries_num < random_num) random_num = queries_num;
-	Statement stmt = conn.createStatement();
-	stmt.executeQuery("SELECT proc_insert_orders(" + queries_num + "," + random_num + ")");
-	out.println("<script>alert('" + queries_num + " orders are inserted!');</script>");
-		}
-		else if (action.equals("refresh")) {
-	//Need to implement.
+			int queries_num = Integer.parseInt(request.getParameter("queries_num"));
+			Random rand = new Random();
+			int random_num = rand.nextInt(30) + 1;
+			if (queries_num < random_num)
+				random_num = queries_num;
+			Statement stmt = conn.createStatement();
+			Statement stmtLog = conn.createStatement();
+			PreparedStatement pst = conn.prepareStatement("INSERT INTO log (startID, endID) select max(id)+1, max(id) + " + queries_num + " from orders");
+			pst.executeUpdate();
+			stmt.executeQuery("SELECT proc_insert_orders(" + queries_num + "," + random_num + ")");
+			out.println("<script>alert('" + queries_num + " orders are inserted!');</script>");
+					
+			
+		} else if (action.equals("refresh")) {
+			//Need to implement.
 		} else if (action.equals("RunQuery") || session.getAttribute("firstTime").equals("true")) {
-	
-		
-	Statement stmt10 = conn.createStatement();
-	Statement stmt11 = conn.createStatement();
 
+			Statement stmt10 = conn.createStatement();
+			Statement stmt11 = conn.createStatement();
 
 			PreparedStatement pstmts = conn.prepareStatement(
 					"DELETE FROM productColumns; " + "DELETE FROM stateRows; DELETE FROM data;");
