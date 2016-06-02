@@ -24,7 +24,7 @@ String salesCategory = "";
 String salesCategoryMenu = "";
 	try {
 		Class.forName("org.postgresql.Driver");
-	    String url = "jdbc:postgresql://localhost:5432/CSE135";
+	    String url = "jdbc:postgresql://localhost:5432/postgres";
 	    String admin = "postgres";
 	    String password = "password";
   	conn = DriverManager.getConnection(url, admin, password);
@@ -163,10 +163,7 @@ String salesCategoryMenu = "";
 				name="queries_num"> <input class="btn btn-primary"
 				type="submit" name="submit" value="insert" />
 		</form>
-		<form action="orders.jsp" method="POST">
-			<input class="btn btn-success" type="button" name="submit"
-				value="refresh" onClick="refresh('last_log_id=1');"/>
-		</form>
+
 
 
 		<% 
@@ -313,8 +310,11 @@ String salesCategoryMenu = "";
 		</tbody>
 		</table>
 	
-					
-					
+
+			<form action="orders.jsp" method="POST">
+			<input class="btn btn-success" type="button" name="submit"
+				value="refresh" onClick="refresh('last_log_id=1');" style="position: fixed; bottom: 0px; right: 0px"/>
+			</form>		
 </body>
 </html>
 
