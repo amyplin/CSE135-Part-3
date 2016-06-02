@@ -199,10 +199,7 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 				name="queries_num"> <input class="btn btn-primary"
 				type="submit" name="submit" value="insert" />
 		</form>
-		<form action="orders.jsp" method="POST">
-			<input class="btn btn-success" type="button" name="submit"
-				value="refresh" onClick="refresh('last_log_id=1');"/>
-		</form>
+
 
 
 		<% 
@@ -304,8 +301,11 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 		</tbody>
 		</table>
 	
-					
-					
+
+			<form action="orders.jsp" method="POST">
+			<input class="btn btn-success" type="button" name="submit"
+				value="refresh" onClick="refresh('last_log_id=1');" style="position: fixed; bottom: 0px; right: 0px"/>
+			</form>		
 </body>
 </html>
 
