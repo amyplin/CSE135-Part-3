@@ -11,7 +11,7 @@
 	crossorigin="anonymous">
 <title>CSE135 Project</title>
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
-	<script type="text/javascript" src="case1_js.js"></script>
+	<script type="text/javascript" src="orderFunctions.js"></script>
 </head>
 <%
 	Connection conn = null;
@@ -24,9 +24,9 @@ String salesCategory = "";
 String salesCategoryMenu = "";
 	try {
 		Class.forName("org.postgresql.Driver");
-	    String url = "jdbc:postgresql://localhost:5433/cse135pt3";
+	    String url = "jdbc:postgresql://localhost:5432/CSE135";
 	    String admin = "postgres";
-	    String password = "alin";
+	    String password = "password";
   	conn = DriverManager.getConnection(url, admin, password);
 	}
 	catch (Exception e) {}
@@ -45,18 +45,18 @@ String salesCategoryMenu = "";
 		+ "CREATE TEMP TABLE data(product_id INTEGER NOT NULL,state_id INTEGER NOT NULL,total FLOAT NOT NULL CHECK (total >= 0));");
 		pstmts.executeUpdate();
 		
-		PreparedStatement pstmts2 = conn.prepareStatement("INSERT INTO productColumns (name, total) WITH productInfo(totals, product_id) "
+		PreparedStatement pstmts2 = conn.prepareStatement("INSERT INTO productColumns (id, name, total) WITH productInfo(totals, product_id) "
 		+ "AS (select sum(orders.price) as totals, product_id FROM orders " + salesCategory
-		+ " group by product_id order by totals desc LIMIT 50) SELECT products.name as name, COALESCE(productInfo.totals, 0) as totals "
+		+ " group by product_id order by totals desc LIMIT 50) SELECT products.id as id, products.name as name, COALESCE(productInfo.totals, 0) as totals "
 		+ " FROM products LEFT OUTER JOIN productInfo "
 		+ "ON products.id = productInfo.product_id order by totals desc LIMIT 50");
 		pstmts2.executeUpdate();
 
 		
-		PreparedStatement pst2 = conn.prepareStatement("INSERT INTO stateRows (name, total) WITH stateInfo(totals, state_id) AS (select sum(orders.price) as totals, users.state_id as state_id "
+		PreparedStatement pst2 = conn.prepareStatement("INSERT INTO stateRows (name, total, id) WITH stateInfo(totals, state_id) AS (select sum(orders.price) as totals, users.state_id as state_id "
 		+ " from orders inner join users on orders.user_id = users.id " + salesCategory
 		+ " group by users.state_id order by totals desc)"
-		+ " SELECT DISTINCT LEFT(states.name,10) as state, coalesce(stateInfo.totals,0) as totals FROM states LEFT OUTER JOIN stateInfo ON states.id = "
+		+ " SELECT DISTINCT LEFT(states.name,10) as state, coalesce(stateInfo.totals,0) as totals, states.id as id FROM states LEFT OUTER JOIN stateInfo ON states.id = "
 		+ "stateInfo.state_id order by totals desc");
 		pst2.executeUpdate();
 
@@ -108,20 +108,18 @@ String salesCategoryMenu = "";
 					"DELETE FROM productColumns; " + "DELETE FROM stateRows; DELETE FROM data;");
 			pstmts.executeUpdate();
 
-			PreparedStatement pstmts2 = conn.prepareStatement(
-					"INSERT INTO productColumns (name, total) WITH productInfo(totals, product_id) "
-							+ "AS (select sum(orders.price) as totals, product_id FROM orders " + salesCategory
-							+ " group by product_id order by totals desc LIMIT 50) SELECT products.name as name, COALESCE(productInfo.totals, 0) as totals "
-							+ " FROM products LEFT OUTER JOIN productInfo "
-							+ "ON products.id = productInfo.product_id order by totals desc LIMIT 50");
+			PreparedStatement pstmts2 = conn.prepareStatement("INSERT INTO productColumns (id, name, total) WITH productInfo(totals, product_id) "
+					+ "AS (select sum(orders.price) as totals, product_id FROM orders " + salesCategory
+					+ " group by product_id order by totals desc LIMIT 50) SELECT products.id as id, products.name as name, COALESCE(productInfo.totals, 0) as totals "
+					+ " FROM products LEFT OUTER JOIN productInfo "
+					+ "ON products.id = productInfo.product_id order by totals desc LIMIT 50");
 			pstmts2.executeUpdate();
 
-			PreparedStatement pst2 = conn.prepareStatement(
-					"INSERT INTO stateRows (name, total) WITH stateInfo(totals, state_id) AS (select sum(orders.price) as totals, users.state_id as state_id "
-							+ " from orders inner join users on orders.user_id = users.id " + salesCategory
-							+ " group by users.state_id order by totals desc)"
-							+ " SELECT DISTINCT LEFT(states.name,10) as state, coalesce(stateInfo.totals,0) as totals FROM states LEFT OUTER JOIN stateInfo ON states.id = "
-							+ "stateInfo.state_id order by totals desc");
+			PreparedStatement pst2 = conn.prepareStatement("INSERT INTO stateRows (name, total, id) WITH stateInfo(totals, state_id) AS (select sum(orders.price) as totals, users.state_id as state_id "
+					+ " from orders inner join users on orders.user_id = users.id " + salesCategory
+					+ " group by users.state_id order by totals desc)"
+					+ " SELECT DISTINCT LEFT(states.name,10) as state, coalesce(stateInfo.totals,0) as totals, states.id as id FROM states LEFT OUTER JOIN stateInfo ON states.id = "
+					+ "stateInfo.state_id order by totals desc");
 			pst2.executeUpdate();
 
 			PreparedStatement pst3 = conn.prepareStatement("INSERT INTO data (product_id, state_id, total) "
@@ -166,8 +164,8 @@ String salesCategoryMenu = "";
 				type="submit" name="submit" value="insert" />
 		</form>
 		<form action="orders.jsp" method="POST">
-			<input class="btn btn-success" type="submit" name="submit"
-				value="refresh" />
+			<input class="btn btn-success" type="button" name="submit"
+				value="refresh" onClick="refresh('last_log_id=1');"/>
 		</form>
 
 
@@ -272,17 +270,19 @@ String salesCategoryMenu = "";
 			</div>
 
 
-			<table class="table table-striped">
+			<table id="mytable" class="table table-striped">
 				<th></th>
 				<%
 
 				
 					rsProducts = stmt2.executeQuery("select * from productColumns");
-
-					while (rsProducts.next()) { //dispaly products
+					
+					ArrayList<String> productList =  new ArrayList<String>();
+					while (rsProducts.next()) { //display products
 				%>
-				<th><%=rsProducts.getString("name")%> (<%=rsProducts.getFloat("total")%>)</th>
+				<th id="P<%=Integer.toString(rsProducts.getInt("id"))%>"><%=rsProducts.getString("name")%> (<%=rsProducts.getFloat("total")%>)</th>
 				<%
+						productList.add(Integer.toString(rsProducts.getInt("id")));
 					}
 
 					ResultSet rsState = stmt.executeQuery("select * from stateRows");
@@ -292,15 +292,16 @@ String salesCategoryMenu = "";
 					<%
 					int count = 0;
 					ResultSet rs2 = stmt3.executeQuery("select * from data");
-						while (rsState.next()) { //loop through states												
+						while (rsState.next()) { //loop through states	
+							System.out.println(Integer.toString(rsState.getInt("id")));
 					%>
 					<tr>
-						<th><%=rsState.getString("name")%> (<%=rsState.getFloat("total")%>)</th>
+						<th id="S<%=Integer.toString(rsState.getInt("id"))%>"><%=rsState.getString("name")%> (<%=rsState.getFloat("total")%>)</th>
 						<%
 						
 						while (count < 50 && rs2.next()) { //loop through to get products sum
 							count++; 					%>
-							<td><%=rs2.getFloat("total")%></td>
+							<td id="<%=productList.get(count-1) + "_" + Integer.toString(rsState.getInt("id"))%>"><%=rs2.getFloat("total")%></td>
 							<% 
 							} 
 							count = 0; %>
