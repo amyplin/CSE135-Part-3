@@ -31,6 +31,54 @@ String salesCategoryMenu = "";
 	}
 	catch (Exception e) {}
 	
+	session.setAttribute("firstTime", "true"); //come back adn change this when categories
+	
+	
+	if (session.getAttribute("firstTime").equals("true")) {
+		Statement stmt10 = conn.createStatement();
+		Statement stmt11 = conn.createStatement();
+
+
+		PreparedStatement pstmts = conn.prepareStatement("CREATE TEMP TABLE productColumns( "
+		+ " id SERIAL PRIMARY KEY, name TEXT NOT NULL, total FLOAT NOT NULL CHECK (total >= 0)); "
+		+ "CREATE TEMP TABLE stateRows(id SERIAL PRIMARY KEY,name TEXT NOT NULL UNIQUE,total FLOAT NOT NULL CHECK (total >= 0)); "
+		+ "CREATE TEMP TABLE data(product_id INTEGER NOT NULL,state_id INTEGER NOT NULL,total FLOAT NOT NULL CHECK (total >= 0));");
+		pstmts.executeUpdate();
+		
+		PreparedStatement pstmts2 = conn.prepareStatement("INSERT INTO productColumns (name, total) WITH productInfo(totals, product_id) "
+		+ "AS (select sum(orders.price) as totals, product_id FROM orders " + salesCategory
+		+ " group by product_id order by totals desc LIMIT 50) SELECT products.name as name, COALESCE(productInfo.totals, 0) as totals "
+		+ " FROM products LEFT OUTER JOIN productInfo "
+		+ "ON products.id = productInfo.product_id order by totals desc LIMIT 50");
+		pstmts2.executeUpdate();
+
+		
+		PreparedStatement pst2 = conn.prepareStatement("INSERT INTO stateRows (name, total) WITH stateInfo(totals, state_id) AS (select sum(orders.price) as totals, users.state_id as state_id "
+		+ " from orders inner join users on orders.user_id = users.id " + salesCategory
+		+ " group by users.state_id order by totals desc)"
+		+ " SELECT DISTINCT LEFT(states.name,10) as state, coalesce(stateInfo.totals,0) as totals FROM states LEFT OUTER JOIN stateInfo ON states.id = "
+		+ "stateInfo.state_id order by totals desc");
+		pst2.executeUpdate();
+
+		PreparedStatement pst3 = conn.prepareStatement("INSERT INTO data (product_id, state_id, total) " +
+		"with productInfo(product_totals, product_id) as (select sum(orders.price) as totals, product_id from orders group " +
+		"by product_id order by totals desc limit 50), " +
+		"stateInfo(state_totals, state_id) as (select sum(orders.price) as totals, users.state_id as state_id " +
+		"from orders inner join users on orders.user_id = users.id group by users.state_id " +
+		"order by totals desc), " +
+		"zero(id,product_id,quantity,price,is_cart,user_id,state_id) as " +
+		"(select 0,product_id,0,0,false,0,state_id from productInfo,stateInfo), " +
+		"orders_stateid(id,product_id,quantity,price,is_cart,user_id,state_id) as " +
+		"(select id,product_id,quantity,price,is_cart,u.user_id,u.state_id from orders o inner join (select id as user_id, state_id from users) u on o.user_id = u.user_id " +
+		"UNION select * from zero), " +
+		"totals as (select coalesce(sum(price),0) as total,state_id,product_id " +
+		"from orders_stateid where state_id in (Select state_id from stateInfo) and product_id in (Select product_id from productInfo) " +
+		"GROUP BY state_id,product_id), final_table(product_id,state_id,total) as " + 
+		"(select t.product_id, t.state_id, total from totals t inner join productInfo pi on t.product_id = pi.product_id " +
+		"inner join stateInfo si on t.state_id = si.state_id ORDER BY state_totals desc,product_totals desc) " +
+		"select * from final_table;");
+		pst3.executeUpdate();
+	}
 	
 	
 	if ("POST".equalsIgnoreCase(request.getMethod())) {
@@ -46,53 +94,53 @@ String salesCategoryMenu = "";
 		}
 		else if (action.equals("refresh")) {
 	//Need to implement.
-		} else if (action.equals("run query")) {
-			Statement stmt10 = conn.createStatement();
-			Statement stmt11 = conn.createStatement();
+		} else if (action.equals("RunQuery") || session.getAttribute("firstTime").equals("true")) {
+	
+		
+	Statement stmt10 = conn.createStatement();
+	Statement stmt11 = conn.createStatement();
 
-			PreparedStatement pstmts = conn
-					.prepareStatement("INSERT INTO productColumns (name, total) WITH productInfo(totals, product_id) "
+
+			PreparedStatement pstmts = conn.prepareStatement(
+					"DELETE FROM productColumns; " + "DELETE FROM stateRows; DELETE FROM data;");
+			pstmts.executeUpdate();
+
+			PreparedStatement pstmts2 = conn.prepareStatement(
+					"INSERT INTO productColumns (name, total) WITH productInfo(totals, product_id) "
 							+ "AS (select sum(orders.price) as totals, product_id FROM orders " + salesCategory
 							+ " group by product_id order by totals desc LIMIT 50) SELECT products.name as name, COALESCE(productInfo.totals, 0) as totals "
 							+ " FROM products LEFT OUTER JOIN productInfo "
 							+ "ON products.id = productInfo.product_id order by totals desc LIMIT 50");
-			pstmts.executeUpdate();
+			pstmts2.executeUpdate();
 
-			
-			PreparedStatement pst2 = conn.prepareStatement("INSERT INTO stateRows (name, total) WITH stateInfo(totals, state_id) AS (select sum(orders.price) as totals, users.state_id as state_id "
-					+ " from orders inner join users on orders.user_id = users.id " + salesCategory
-					+ " group by users.state_id order by totals desc)"
-					+ " SELECT DISTINCT LEFT(states.name,10) as state, coalesce(stateInfo.totals,0) as totals FROM states LEFT OUTER JOIN stateInfo ON states.id = "
-					+ "stateInfo.state_id order by totals desc");
+			PreparedStatement pst2 = conn.prepareStatement(
+					"INSERT INTO stateRows (name, total) WITH stateInfo(totals, state_id) AS (select sum(orders.price) as totals, users.state_id as state_id "
+							+ " from orders inner join users on orders.user_id = users.id " + salesCategory
+							+ " group by users.state_id order by totals desc)"
+							+ " SELECT DISTINCT LEFT(states.name,10) as state, coalesce(stateInfo.totals,0) as totals FROM states LEFT OUTER JOIN stateInfo ON states.id = "
+							+ "stateInfo.state_id order by totals desc");
 			pst2.executeUpdate();
 
-			PreparedStatement pst3 = conn.prepareStatement("INSERT INTO data (product_id, state_id, total) " +
-					"with productInfo(product_totals, product_id) as (select sum(orders.price) as totals, product_id from orders group " +
-					"by product_id order by totals desc limit 50), " +
-					"stateInfo(state_totals, state_id) as (select sum(orders.price) as totals, users.state_id as state_id " +
-					"from orders inner join users on orders.user_id = users.id group by users.state_id " +
-					"order by totals desc), " +
-					"zero(id,product_id,quantity,price,is_cart,user_id,state_id) as " +
-					"(select 0,product_id,0,0,false,0,state_id from productInfo,stateInfo), " +
-					"orders_stateid(id,product_id,quantity,price,is_cart,user_id,state_id) as " +
-					"(select id,product_id,quantity,price,is_cart,u.user_id,u.state_id from orders o inner join (select id as user_id, state_id from users) u on o.user_id = u.user_id " +
-					"UNION select * from zero), " +
-					"totals as (select coalesce(sum(price),0) as total,state_id,product_id " +
-					"from orders_stateid where state_id in (Select state_id from stateInfo) and product_id in (Select product_id from productInfo) " +
-					"GROUP BY state_id,product_id), final_table(product_id,state_id,total) as " + 
-					"(select t.product_id, t.state_id, total from totals t inner join productInfo pi on t.product_id = pi.product_id " +
-					"inner join stateInfo si on t.state_id = si.state_id ORDER BY state_totals desc,product_totals desc) " +
-					"select * from final_table;");
+			PreparedStatement pst3 = conn.prepareStatement("INSERT INTO data (product_id, state_id, total) "
+					+ "with productInfo(product_totals, product_id) as (select sum(orders.price) as totals, product_id from orders group "
+					+ "by product_id order by totals desc limit 50), "
+					+ "stateInfo(state_totals, state_id) as (select sum(orders.price) as totals, users.state_id as state_id "
+					+ "from orders inner join users on orders.user_id = users.id group by users.state_id "
+					+ "order by totals desc), "
+					+ "zero(id,product_id,quantity,price,is_cart,user_id,state_id) as "
+					+ "(select 0,product_id,0,0,false,0,state_id from productInfo,stateInfo), "
+					+ "orders_stateid(id,product_id,quantity,price,is_cart,user_id,state_id) as "
+					+ "(select id,product_id,quantity,price,is_cart,u.user_id,u.state_id from orders o inner join (select id as user_id, state_id from users) u on o.user_id = u.user_id "
+					+ "UNION select * from zero), "
+					+ "totals as (select coalesce(sum(price),0) as total,state_id,product_id "
+					+ "from orders_stateid where state_id in (Select state_id from stateInfo) and product_id in (Select product_id from productInfo) "
+					+ "GROUP BY state_id,product_id), final_table(product_id,state_id,total) as "
+					+ "(select t.product_id, t.state_id, total from totals t inner join productInfo pi on t.product_id = pi.product_id "
+					+ "inner join stateInfo si on t.state_id = si.state_id ORDER BY state_totals desc,product_totals desc) "
+					+ "select * from final_table;");
 			pst3.executeUpdate();
 		}
 	}
-	
-
-
-	
-	
-	
-	
 %>
 
 <body>
@@ -141,8 +189,8 @@ String salesCategoryMenu = "";
 				}
 				session.setAttribute("salesID", "All");
 			} else {
-				if (selectedCategory == null || selectedOrder == null) {
-					selectedCategory = session.getAttribute("salesID").toString();
+				if (selectedCategory == null) {
+					//selectedCategory = session.getAttribute("salesID").toString();
 				} else if (selectedCategory.equals("All")) {
 					session.setAttribute("sales", "All");
 				} else {
@@ -156,53 +204,6 @@ String salesCategoryMenu = "";
 				}
 			}
 
-			if (productButton == null) {
-				session.setAttribute("offsetProduct", 0);
-			}
-			if ("Products".equals(productButton)) {
-				int num = (Integer) session.getAttribute("offsetProduct") + 10;
-				session.setAttribute("offsetProduct", num);
-				System.out.println("order in product button = " + session.getAttribute("order"));
-				//System.out.println("offset product = " + session.getAttribute("offsetProduct"));
-			}
-
-			if (stateButton == null) {
-				session.setAttribute("offsetState", 0);
-			}
-			if ("States".equals(stateButton)) {
-				int num = (Integer) session.getAttribute("offsetState") + 20;
-				session.setAttribute("offsetState", num);
-				//System.out.println("offset state = " + session.getAttribute("offsetState"));
-			}
-
-			if ("Alphabetical".equals(selectedOrder)) {
-				//System.out.println("selected cateogyr  asdjfad = " + selectedCategory);
-				productOrder = orderName;
-				stateOrder = orderState;
-				if (!"All".equals(selectedCategory)) {
-					salesCategory = "inner join products on orders.product_id = products.id where products.category_id = "
-							+ selectedCategory;
-					salesCategoryMenu = "where id = " + selectedCategory;
-					salesDisplay = "and products.category_id = " + selectedCategory;
-					session.setAttribute("salesID", selectedCategory);
-					//come back
-				}
-				session.setAttribute("order", "Alphabetical");
-			}
-			if ("Top-K".equals(selectedOrder)) {
-				productOrder = orderTopK;
-				stateOrder = orderTopK;
-				if (!"All".equals(selectedCategory)) {
-					salesCategory = "inner join products on orders.product_id = products.id where products.category_id = "
-							+ selectedCategory;
-					salesCategoryMenu = "where id = " + selectedCategory;
-					salesDisplay = "and products.category_id = " + selectedCategory;
-				} else {
-					salesCategoryMenu = "";
-				}
-				session.setAttribute("order", "Top-K");
-			}
-		
 
 		Statement stmt = conn.createStatement();
 		Statement stmt2 = conn.createStatement();
@@ -244,7 +245,7 @@ String salesCategoryMenu = "";
 			</div>
 
 			<div class="form-group">
-				<form action="StateOrders.jsp" method="POST">
+				<form action="orders.jsp" method="POST">
 					</select> <label for="Sales">Sales-Filtering:</label> <select name="Sales"
 						id="sales" class="form-control">
 						<option value=<%=session.getAttribute("sales")%>><%=session.getAttribute("sales")%></option>
@@ -263,7 +264,7 @@ String salesCategoryMenu = "";
 						%>
 					</select>
 					<td><input class="btn btn-primary" type="submit" name="submit"
-						value="Run Query" /></td>
+						value="RunQuery" /></td>
 				</form>
 			</div>
 
