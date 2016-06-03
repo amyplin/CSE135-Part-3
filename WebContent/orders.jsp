@@ -95,20 +95,16 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 		pst2.executeUpdate();
 
 		PreparedStatement pst3 = conn.prepareStatement("INSERT INTO data (product_id, state_id, total) "
-				+ "with productInfo(product_totals, product_id) as (select sum(orders.price) as totals, product_id from orders group "
-				+ "by product_id order by totals desc limit 50), "
-				+ "stateInfo(state_totals, state_id) as (select sum(orders.price) as totals, users.state_id as state_id "
-				+ "from orders inner join users on orders.user_id = users.id group by users.state_id "
-				+ "order by totals desc), " + "zero(id,product_id,quantity,price,is_cart,user_id,state_id) as "
-				+ "(select 0,product_id,0,0,false,0,state_id from productInfo,stateInfo), "
+				+ "with zero(id,product_id,quantity,price,is_cart,user_id,state_id) as "
+				+ "(select 0,productColumns.id,0,0,false,0,stateRows.id from productColumns,stateRows), "
 				+ "orders_stateid(id,product_id,quantity,price,is_cart,user_id,state_id) as "
 				+ "(select id,product_id,quantity,price,is_cart,u.user_id,u.state_id from orders o inner join (select id as user_id, state_id from users) u on o.user_id = u.user_id "
 				+ "UNION select * from zero), "
 				+ "totals as (select coalesce(sum(price),0) as total,state_id,product_id "
-				+ "from orders_stateid where state_id in (Select state_id from stateInfo) and product_id in (Select product_id from productInfo) "
+				+ "from orders_stateid where state_id in (Select id from stateRows) and product_id in (Select id from productColumns) "
 				+ "GROUP BY state_id,product_id), final_table(product_id,state_id,total) as "
-				+ "(select t.product_id, t.state_id, total from totals t inner join productInfo pi on t.product_id = pi.product_id "
-				+ "inner join stateInfo si on t.state_id = si.state_id ORDER BY state_totals desc,product_totals desc) "
+				+ "(select t.product_id, t.state_id, t.total from totals t inner join productColumns pi on t.product_id = pi.id "
+				+ "inner join stateRows si on t.state_id = si.id ORDER BY si.total desc,pi.total desc) "
 				+ "select * from final_table;");
 		pst3.executeUpdate();
 	}
@@ -160,20 +156,16 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 
 
 			PreparedStatement pst3 = conn.prepareStatement("INSERT INTO data (product_id, state_id, total) "
-					+ "with productInfo(product_totals, product_id) as (select sum(orders.price) as totals, product_id from orders " + salesCategory 
-					+ "group by product_id order by totals desc limit 50), "
-					+ "stateInfo(state_totals, state_id) as (select sum(orders.price) as totals, users.state_id as state_id "
-					+ "from orders inner join users on orders.user_id = users.id " + salesCategory + " group by users.state_id "
-					+ "order by totals desc), " + "zero(id,product_id,quantity,price,is_cart,user_id,state_id) as "
-					+ "(select 0,product_id,0,0,false,0,state_id from productInfo,stateInfo), "
+					+ "with zero(id,product_id,quantity,price,is_cart,user_id,state_id) as "
+					+ "(select 0,productColumns.id,0,0,false,0,stateRows.id from productColumns,stateRows), "
 					+ "orders_stateid(id,product_id,quantity,price,is_cart,user_id,state_id) as "
 					+ "(select id,product_id,quantity,price,is_cart,u.user_id,u.state_id from orders o inner join (select id as user_id, state_id from users) u on o.user_id = u.user_id "
 					+ "UNION select * from zero), "
 					+ "totals as (select coalesce(sum(price),0) as total,state_id,product_id "
-					+ "from orders_stateid where state_id in (Select state_id from stateInfo) and product_id in (Select product_id from productInfo) "
+					+ "from orders_stateid where state_id in (Select id from stateRows) and product_id in (Select id from productColumns) "
 					+ "GROUP BY state_id,product_id), final_table(product_id,state_id,total) as "
-					+ "(select t.product_id, t.state_id, total from totals t inner join productInfo pi on t.product_id = pi.product_id "
-					+ "inner join stateInfo si on t.state_id = si.state_id ORDER BY state_totals desc,product_totals desc) "
+					+ "(select t.product_id, t.state_id, t.total from totals t inner join productColumns pi on t.product_id = pi.id "
+					+ "inner join stateRows si on t.state_id = si.id ORDER BY si.total desc,pi.total desc) "
 					+ "select * from final_table;");
 			pst3.executeUpdate();
 		}				
