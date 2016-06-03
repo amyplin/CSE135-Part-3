@@ -299,7 +299,8 @@ String salesCategory = "";
 	
 
 			<form action="orders.jsp" method="POST">
-			<input class="btn btn-success" type="button" name="submit" style="position:fixed; bottom:0px; right:0px">
+			<input class="btn btn-success" type="button" name="submit"
+				value="refresh" onClick="refresh('<%= "last_log_id=" + session.getAttribute("last_log_id") %>');" style="position: fixed; bottom: 0px; right: 0px"/>
 			</form>		
 </body>
 </html>
