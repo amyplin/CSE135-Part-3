@@ -1,10 +1,11 @@
-function refresh(logid){
+function refresh(pString){
+var lastlogid = document.getElementById("lastlogid").value;
+alert(lastlogid);
 	
 $.ajax({
 	  	type: 'POST',
-	  	url: "refresh.jsp?" + logid,
+	  	url: "refresh.jsp?" + "last_log_id=" + lastlogid + "&" + pString,
 	  	success:function(result){
-		  		
 	 	//Set table cells to black
 	  	var table = document.getElementById("mytable");
 
@@ -17,8 +18,39 @@ $.ajax({
 	  	
 	  	var response = $.parseJSON(result);	
 	  	
-	  	var logmax = response[0].max_order_id;
-	  	for (var r =0, block; block = response[r]; r++) {
+	  	var logmax = response[2].max_order_id;//the new max log id
+	  	document.getElementById("lastlogid").innerHTML = logmax;
+	  	
+	  	var purplelist = response[0];
+	  	var missinglist = response[1];
+
+	  	
+	  	// change background to purple for all purple IDs
+	  	for( var x = 0; x < purplelist.length; x++){
+	  		var id = purplelist[x];
+	  		//change the header
+	  		document.getElementById("P" + id).style.backgroundColor = "plum";
+	  		
+	  		//change all the columns
+	  		var cellnumber = document.getElementById("P" + id).cellIndex;
+	  		for( var y = 1; y < 50; y++){
+	  			document.getElementById("mytable").rows[y].cells[cellnumber].style.backgroundColor = "plum";
+	  		}
+	  		
+	  	}
+	  	
+	  	//display a list of items to be inserted
+	  	for( var x = 0; x < missinglist.length; x++){
+	  		var text = document.getElementById("missingproducts").innerHTML;
+	  		document.getElementById("missingproducts").innerHTML = text + "|" + missinglist[x];
+	  	}
+	  	
+	  	var text = document.getElementById("missingproducts").innerHTML;
+  		document.getElementById("missingproducts").innerHTML = text + "|";
+	  	
+	  	
+	  	for (var r =2, block; block = response[r]; r++) {
+	  		
 	  		
 	  		var si = block.state_id;
 	  		var pi = block.product_id;
@@ -27,11 +59,11 @@ $.ajax({
 	  		
 	  		//state_product
 	  		if (document.getElementById("S" + si.toString()) && document.getElementById("P" + pi.toString())) {
-		  		document.getElementById(si.toString() + "_" + pi.toString()).style.color = "red";
-		  		var currVal = document.getElementById(si.toString() + "_" + pi.toString()).innerHTML;
-		  		var currPrice = (parseFloat(currVal.replace(/[^0-9.]/g,'')) + price).toString();
-		  		document.getElementById(parseInt(si) + "_" + parseInt(pi)).innerHTML = currPrice;
-	  		
+		  		document.getElementById(pi.toString() + "_" + si.toString()).style.color = "red";
+		  		var currVal = document.getElementById(pi.toString() + "_" + si.toString()).innerHTML;
+		  		var currPrice = (Number(parseFloat(currVal.replace(/[^0-9.]/g,'')) + price).toFixed(2)).toString();
+		  		document.getElementById(pi.toString() + "_" + si.toString()).innerHTML = currPrice;
+
 	  		}
 	  			
 	  		//state

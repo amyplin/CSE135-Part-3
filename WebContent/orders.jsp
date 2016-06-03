@@ -13,8 +13,11 @@
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 	<script type="text/javascript" src="orderFunctions.js"></script>
 </head>
+
+
+
 <%
-	Connection conn = null;
+Connection conn = null;
 String orderName = " ORDER BY name ";
 String orderState = " ORDER BY state ";
 String orderTopK = " ORDER BY totals desc";
@@ -111,12 +114,21 @@ String salesCategory = "";
 		ResultSet rs4 = pst4.executeQuery();
 		if( rs4.next() ){
 			session.setAttribute("last_log_id", rs4.getInt("id"));
+			System.out.println("last id set as " + rs4.getInt("id"));
+		%> 
+			<div>
+			   <input type="hidden" id="lastlogid" name="lastlogid" form="insertform" value="<%=rs4.getInt("id")%>"> 
+			</div>		
+			
+		  <%
 		}
 	}
 
 	if ("POST".equalsIgnoreCase(request.getMethod())) {
 		String action = request.getParameter("submit");
 		if (action.equals("insert")) {
+			String lastlogid = request.getParameter("lastlogid");
+			%><input type="hidden" id="lastlogid" name="lastlogid" form="insertform" value="<%=lastlogid%>"> <%
 			int queries_num = Integer.parseInt(request.getParameter("queries_num"));
 			Random rand = new Random();
 			int random_num = rand.nextInt(30) + 1;
@@ -172,6 +184,20 @@ String salesCategory = "";
 					+ "inner join stateRows si on t.state_id = si.id ORDER BY si.total desc,pi.total desc) "
 					+ "select * from final_table;");
 			pst3.executeUpdate();
+			
+			//find the most recent log id
+			PreparedStatement pst4 = conn.prepareStatement("SELECT MAX(id) as id FROM log");
+			ResultSet rs4 = pst4.executeQuery();
+			if( rs4.next() ){
+				session.setAttribute("last_log_id", rs4.getInt("id"));
+				System.out.println("last id set as " + rs4.getInt("id"));
+				%> 
+				<div>
+				   <input type="hidden" id="lastlogid" name="lastlogid" form="insertform" value="<%=rs4.getInt("id")%>"> 
+				</div>		
+				
+			  <%
+			}
 		}				
 	}				
 %>
@@ -190,7 +216,8 @@ String salesCategory = "";
 		<div>
 			<h1>Need to implement! Sales Analytics</h1>
 		</div>
-		<form action="orders.jsp" method="POST">
+		<form action="orders.jsp" method="POST" id="insertform">
+			
 			<label># of queries to insert</label> <input type="number"
 				name="queries_num"> <input class="btn btn-primary"
 				type="submit" name="submit" value="insert" />
@@ -236,6 +263,7 @@ String salesCategory = "";
 						<option value=<%=session.getAttribute("sales")%>><%=session.getAttribute("sales")%></option>
 						<option value="All">All</option>
 						<%
+							System.out.println("current log id is: " + session.getAttribute("last_log_id"));
 							while (rsCategories.next()) {
 								String category = rsCategories.getString("name");
 								String category_id = rsCategories.getString("id");
@@ -253,6 +281,9 @@ String salesCategory = "";
 				</form>
 			</div>
 
+<div>
+<p id="missingproducts"></p>
+</div>
 
 			<table id="mytable" class="table table-striped">
 				<th></th>
@@ -262,13 +293,16 @@ String salesCategory = "";
 					rsProducts = stmt2.executeQuery("select * from productColumns");
 					
 					ArrayList<String> productList =  new ArrayList<String>();
+					String pString = "";
 					while (rsProducts.next()) { //display products
 				%>
 				<th id="P<%=Integer.toString(rsProducts.getInt("id"))%>"><%=rsProducts.getString("name")%> (<%=rsProducts.getFloat("total")%>)</th>
 				<%
+						pString += Integer.toString(rsProducts.getInt("id")) + ":";
 						productList.add(Integer.toString(rsProducts.getInt("id")));
 					}
-
+					pString = pString.substring(0,pString.length() - 1);	
+					
 					ResultSet rsState = stmt.executeQuery("select * from stateRows");
 				%>
 
@@ -297,10 +331,12 @@ String salesCategory = "";
 		</tbody>
 		</table>
 	
-
+			<div>
+			   <input type="hidden" name="testid" id="testid" value="5" />
+			</div>
 			<form action="orders.jsp" method="POST">
 			<input class="btn btn-success" type="button" name="submit"
-				value="refresh" onClick="refresh('<%= "last_log_id=" + session.getAttribute("last_log_id") %>');" style="position: fixed; bottom: 0px; right: 0px"/>
+				value="refresh" onClick="refresh('plist=<%= pString%>');" style="position: fixed; bottom: 0px; right: 0px"/>
 			</form>		
 </body>
 </html>
