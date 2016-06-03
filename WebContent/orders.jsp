@@ -33,7 +33,6 @@ String salesCategory = "";
 	
 	
 	String selectedCategory = request.getParameter("Sales");
-System.out.println("session = " + session.getAttribute("firstTime"));
 	
 	if (session.getAttribute("firstTime") == null) {
 		session.setAttribute("firstTime", "true");
@@ -56,7 +55,6 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 					.executeQuery("select name from categories where id = " + selectedCategory);
 			if (getName.next()) {
 				session.setAttribute("sales", getName.getString("name"));
-				System.out.println("name = " + getName.getString("name"));
 				session.setAttribute("salesID", selectedCategory); //id
 				salesCategory = "inner join products on orders.product_id = products.id where products.category_id = "
 						+ selectedCategory;
@@ -109,7 +107,7 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 		pst3.executeUpdate();
 		
 		//find the most recent log id
-		PreparedStatement pst4 = conn.prepareStatement("SELECT MAX(id) FROM logs");
+		PreparedStatement pst4 = conn.prepareStatement("SELECT MAX(id) as id FROM log");
 		ResultSet rs4 = pst4.executeQuery();
 		if( rs4.next() ){
 			session.setAttribute("last_log_id", rs4.getInt("id"));
@@ -139,7 +137,6 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 
 			Statement stmt10 = conn.createStatement();
 			Statement stmt11 = conn.createStatement();
-			System.out.println("sales cateogry = " + salesCategory);
 
 			PreparedStatement pstmts = conn
 					.prepareStatement(" DELETE FROM data; DELETE FROM productColumns; DELETE FROM stateRows;");
@@ -302,7 +299,7 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 	
 
 			<form action="orders.jsp" method="POST">
-			<input class="btn btn-success" type="button" name="submit"
+			<input class="btn btn-success" type="button" name="submit" style="position:fixed; bottom:0px; right:0px">
 			</form>		
 </body>
 </html>
