@@ -6,6 +6,23 @@ $.ajax({
 	  	type: 'POST',
 	  	url: "refresh.jsp?" + "last_log_id=" + lastlogid + "&" + pString,
 	  	success:function(result){
+	  		
+  		var response = $.parseJSON(result);	
+	  		
+	  	if(!response[2]){
+	  		alert("no new data");
+		 	//Set table cells to black
+		  	var table = document.getElementById("mytable");
+
+		  	for (var i = 0, row; row = table.rows[i]; i++) {
+		
+		        for (var j = 0, cell; cell = row.cells[j]; j++) {
+		        	cell.style.color = "black";
+		        	cell.style.backgroundColor = "white";
+		        }
+		    }
+	  	} else {
+	  		
 	 	//Set table cells to black
 	  	var table = document.getElementById("mytable");
 
@@ -13,13 +30,14 @@ $.ajax({
 	
 	        for (var j = 0, cell; cell = row.cells[j]; j++) {
 	        	cell.style.color = "black";
+	        	cell.style.backgroundColor = "white";
 	        }
 	    }
 	  	
-	  	var response = $.parseJSON(result);	
+	  	
 	  	
 	  	var logmax = response[2].max_order_id;//the new max log id
-	  	document.getElementById("lastlogid").innerHTML = logmax;
+	  	document.getElementById("lastlogid").value = logmax;
 	  	
 	  	var purplelist = response[0];
 	  	var missinglist = response[1];
@@ -33,20 +51,20 @@ $.ajax({
 	  		
 	  		//change all the columns
 	  		var cellnumber = document.getElementById("P" + id).cellIndex;
-	  		for( var y = 1; y < 50; y++){
+	  		for( var y = 1; y < 51; y++){
 	  			document.getElementById("mytable").rows[y].cells[cellnumber].style.backgroundColor = "plum";
 	  		}
 	  		
 	  	}
 	  	
 	  	//display a list of items to be inserted
-	  	for( var x = 0; x < missinglist.length; x++){
-	  		var text = document.getElementById("missingproducts").innerHTML;
-	  		document.getElementById("missingproducts").innerHTML = text + "|" + missinglist[x];
-	  	}
-	  	
-	  	var text = document.getElementById("missingproducts").innerHTML;
-  		document.getElementById("missingproducts").innerHTML = text + "|";
+//	  	for( var x = 0; x < missinglist.length; x++){
+//	  		var text = document.getElementById("missingproducts").innerHTML;
+//	  		document.getElementById("missingproducts").innerHTML = text + "|" + missinglist[x];
+//	  	}
+//	  	
+//	  	var text = document.getElementById("missingproducts").innerHTML;
+  		document.getElementById("missingproducts").innerHTML = missinglist;
 	  	
 	  	
 	  	for (var r =2, block; block = response[r]; r++) {
@@ -86,6 +104,8 @@ $.ajax({
 	  	}
 
 	  	alert("refreshed");
+	  	}
+	  	
 	  	},
 	  	error:function(){
 			// Failed request

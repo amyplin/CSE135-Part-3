@@ -40,11 +40,19 @@
 	productList.removeAll(newProductList); //purple elements are in productList
 	newProductList.removeAll(tempList); //items that have to be added
 	
-	
-	
-	for (String prod : productList) {
-		
+	String queryList = "";
+	for (String prod : newProductList) {
+		queryList += prod + ",";
 	}
+	queryList = queryList.substring(0,queryList.length() - 1);
+	
+	ResultSet stuff = stmt_products.executeQuery("SELECT sum(price) as total, (SELECT name FROM products WHERE id=product_id) as name FROM orders WHERE product_id in (" + queryList + ") GROUP BY product_id ORDER BY total DESC");
+	String ajax_string = "|";
+	while (stuff.next()) {
+		ajax_string += stuff.getString("name") + "(" + stuff.getFloat("total") + ")|";
+	}
+	
+	System.out.println("ajax string is : " + ajax_string);
 	
 	// finds the newest order id from the log, if any
 	PreparedStatement pstmt = conn.prepareStatement("select startID from log where log.id > ? LIMIT 1;");
@@ -61,11 +69,11 @@
 	}
 	result.add(purplearray);
 	
-	JSONArray missingproducts = new JSONArray();
-	for(int i = 0; i < newProductList.size(); i++){
-		missingproducts.add(newProductList.get(i));
-	}
-	result.add(missingproducts);
+	//JSONArray missingproducts = new JSONArray();
+	//or(int i = 0; i < newProductList.size(); i++){
+	//	missingproducts.add(newProductList.get(i));
+	//}
+	result.add(ajax_string);
 	
 	
 	if( rs.next() )
