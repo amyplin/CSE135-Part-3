@@ -46,7 +46,7 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 		}
 		session.setAttribute("salesID", "All");
 	} else {
-		if (selectedCategory.equals("All")) {
+		if ("All".equals(selectedCategory)) {
 			session.setAttribute("sales", "All");
 			salesCategory = " ";
 		
@@ -107,6 +107,13 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 				+ "inner join stateRows si on t.state_id = si.id ORDER BY si.total desc,pi.total desc) "
 				+ "select * from final_table;");
 		pst3.executeUpdate();
+		
+		//find the most recent log id
+		PreparedStatement pst4 = conn.prepareStatement("SELECT MAX(id) FROM logs");
+		ResultSet rs4 = pst4.executeQuery();
+		if( rs4.next() ){
+			session.setAttribute("last_log_id", rs4.getInt("id"));
+		}
 	}
 
 	if ("POST".equalsIgnoreCase(request.getMethod())) {
@@ -296,7 +303,6 @@ System.out.println("session = " + session.getAttribute("firstTime"));
 
 			<form action="orders.jsp" method="POST">
 			<input class="btn btn-success" type="button" name="submit"
-				value="refresh" onClick="refresh('last_log_id=1');" style="position: fixed; bottom: 0px; right: 0px"/>
 			</form>		
 </body>
 </html>
